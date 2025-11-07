@@ -1,17 +1,33 @@
-import { Link, useLocation } from "react-router-dom";
-import { Home, Users, Calendar, DollarSign, BookOpen } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Home, Users, Calendar, DollarSign, BookOpen, Heart, Video, CalendarDays, MessageSquare, LayoutDashboard, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const navItems = [
-  { path: "/", label: "Home", icon: Home },
-  { path: "/devotees", label: "Devotees", icon: Users },
-  { path: "/poojas", label: "Poojas", icon: BookOpen },
-  { path: "/bookings", label: "Bookings", icon: Calendar },
-  { path: "/transactions", label: "Transactions", icon: DollarSign },
-];
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
 
 const Navbar = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
+
+  const navItems = user ? [
+    { path: "/", label: "Home", icon: Home },
+    { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { path: "/donations", label: "Donations", icon: Heart },
+    { path: "/virtual-darshan", label: "Virtual Darshan", icon: Video },
+    { path: "/festivals", label: "Festivals", icon: CalendarDays },
+    { path: "/community", label: "Community", icon: MessageSquare },
+    { path: "/devotees", label: "Devotees", icon: Users },
+    { path: "/poojas", label: "Poojas", icon: BookOpen },
+    { path: "/bookings", label: "Bookings", icon: Calendar },
+    { path: "/transactions", label: "Transactions", icon: DollarSign },
+  ] : [];
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/auth");
+  };
+
+  if (!user) return null;
 
   return (
     <nav className="bg-card border-b border-border/50 shadow-[var(--shadow-soft)] sticky top-0 z-50 backdrop-blur-sm bg-card/95">
@@ -26,8 +42,8 @@ const Navbar = () => {
             </span>
           </Link>
 
-          <div className="hidden md:flex items-center gap-1">
-            {navItems.map((item) => {
+          <div className="hidden lg:flex items-center gap-1">
+            {navItems.slice(0, 6).map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.path;
               
@@ -36,7 +52,7 @@ const Navbar = () => {
                   key={item.path}
                   to={item.path}
                   className={cn(
-                    "flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200",
+                    "flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 text-sm",
                     isActive
                       ? "bg-gradient-to-r from-primary/10 to-accent/10 text-primary font-medium shadow-[var(--shadow-soft)]"
                       : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
@@ -47,11 +63,13 @@ const Navbar = () => {
                 </Link>
               );
             })}
+            <Button variant="ghost" size="icon" onClick={handleSignOut}>
+              <LogOut className="w-4 h-4" />
+            </Button>
           </div>
 
-          {/* Mobile menu - simplified for now */}
-          <div className="md:hidden flex items-center gap-2">
-            {navItems.map((item) => {
+          <div className="lg:hidden flex items-center gap-2">
+            {navItems.slice(0, 5).map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.path;
               
