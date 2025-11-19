@@ -1,1 +1,4 @@
 project_id = "psgtdculctiiiviunnsm"
+
+[functions.send-notification-email]
+import_map = "./functions/import_map.json"
