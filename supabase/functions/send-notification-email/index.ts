@@ -1,6 +1,8 @@
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-
-
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -222,6 +224,66 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // SECURITY: Require authentication to prevent spam and abuse
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Authentication required' }),
+        { 
+          status: 401, 
+          headers: { "Content-Type": "application/json", ...corsHeaders } 
+        }
+      );
+    }
+
+    // Verify the JWT token
+    const supabaseClient = createClient(
+      SUPABASE_URL!,
+      SUPABASE_ANON_KEY!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid authentication token' }),
+        { 
+          status: 401, 
+          headers: { "Content-Type": "application/json", ...corsHeaders } 
+        }
+      );
+    }
+
+    // Check if user has staff or admin role
+    const { data: roles, error: roleError } = await supabaseClient
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id);
+    
+    if (roleError) {
+      console.error('Error checking user roles:', roleError);
+      return new Response(
+        JSON.stringify({ error: 'Authorization check failed' }),
+        { 
+          status: 500, 
+          headers: { "Content-Type": "application/json", ...corsHeaders } 
+        }
+      );
+    }
+
+    const hasPermission = roles?.some(r => r.role === 'admin' || r.role === 'staff');
+    
+    if (!hasPermission) {
+      return new Response(
+        JSON.stringify({ error: 'Insufficient permissions. Only staff and admins can send emails.' }),
+        { 
+          status: 403, 
+          headers: { "Content-Type": "application/json", ...corsHeaders } 
+        }
+      );
+    }
+
     const { type, data }: EmailRequest = await req.json();
     
     let html = "";
