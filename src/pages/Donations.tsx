@@ -70,6 +70,16 @@ const Donations = () => {
   };
 
   const handleDonate = () => {
+    // SECURITY: Require authentication for donations
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to make a donation",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!amount || parseFloat(amount) <= 0) {
       toast({
         title: "Error",
@@ -89,7 +99,7 @@ const Donations = () => {
     }
 
     createDonation.mutate({
-      user_id: user?.id || null,
+      user_id: user.id, // Always set to authenticated user
       campaign_id: selectedCampaign,
       amount: parseFloat(amount),
       donor_name: isAnonymous ? "Anonymous" : donorName,
